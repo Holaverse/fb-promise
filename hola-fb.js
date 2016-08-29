@@ -8,14 +8,12 @@
  *
  */
 
-var HolaFB = function(options) {
-  this.options = options;
-  this._init(options);
-
-  FB.Canvas.setDoneLoading();
-  
-  this.subscribe('auth.authResponseChange', this._onAuthResponseChange.bind(this));
-  this.subscribe('auth.statusChange', this._onStatusChange.bind(this));
+/*
+ * @class HolaFB
+ * Facebook javascript sdk 封装。
+ *
+ */
+var HolaFB = function() {
 };
 
 
@@ -36,10 +34,21 @@ HolaFB.friendCache = {
   reRequests: {}
 };
 
+/*
+ * @method setServerUrl
+ * 设置项目url地址
+ * @param {String} url
+ *
+ */
 HolaFB.prototype.setServerUrl = function(url) {
   this.server_url = url;
 }
 
+/*
+ * @method setAppNamespace
+ * 设置项目在facebook的命名空间，设置之后，应用在facebook的url为//www.facebook.com/appcenter/<name>
+ * @param {String} name 项目名称
+ */
 HolaFB.prototype.setAppNamespace = function(name) {
   this.appNamespace = name;
   this.appCenterURL = '//www.facebook.com/appcenter/' + name;
@@ -83,7 +92,15 @@ HolaFB.prototype._getFriendCacheData = function(endpoint, options) {
   }
 };
 
-HolaFB.prototype._init = function(options) {
+/*
+ * @method init
+ * 初始化Facebook javascript sdk
+ * @param {Object} options 初始化选项
+ * options.version sdk api版本号
+ * options.appId facebook项目编号
+ *
+ */
+HolaFB.prototype.init = function(options) {
   if(!options || !options.appId) {
     throw new Error('no app id');
   }
@@ -91,15 +108,25 @@ HolaFB.prototype._init = function(options) {
     throw new Error('no sdk version');
   }
   
-  this.appId = options.appId || '170644446692851';
+  this.appId = options.appId;
   FB.init({
-    appId      : options.appId || '170644446692851',
+    appId      : options.appId,
     frictionlessRequests: true,
     status: true,
     version    : options.version || 'v2.7'
   });
+
+  FB.Canvas.setDoneLoading();
+  
+  this.subscribe('auth.authResponseChange', this._onAuthResponseChange.bind(this));
+  this.subscribe('auth.statusChange', this._onStatusChange.bind(this));
 };
 
+/*
+ * @method getLoginStatus 
+ * 获取登陆状态
+ * @return {Promise} Promise对象
+ */
 HolaFB.prototype.getLoginStatus = function() {
   return new Promise(function(resolve, reject) {
     FB.getLoginStatus(function(response) {
@@ -108,11 +135,18 @@ HolaFB.prototype.getLoginStatus = function() {
   }); 
 };
 
-HolaFB.prototype.getMe = function() {
+/*
+ * @method getMe
+ * 获取登陆者个人信息
+ * @param {Object} options 信息选项
+ * @return {Promise} Promise对象
+ */
+HolaFB.prototype.getMe = function(options) {
   var that = this;
+  options = options || {fields: 'id,name,first_name,picture.width(120).height(120)'};
+
   return new Promise(function(resolve, reject) {
-    that._getFriendCacheData('me',
-      {fields: 'id,name,first_name,picture.width(120).height(120)'})
+    that._getFriendCacheData('me', options)
     .then(function(response) {
       resolve(response);
     }).catch(function(error) {
@@ -121,6 +155,11 @@ HolaFB.prototype.getMe = function() {
   });
 };
 
+/*
+ * @method getPermissions
+ * 获取应用权限
+ * @return {Promise} Promise对象
+ */
 HolaFB.prototype.getPermissions = function() {
   var that = this;
   return new Promise(function(resolve, reject) {
@@ -133,6 +172,12 @@ HolaFB.prototype.getPermissions = function() {
   });
 };
 
+/*
+ * @method hasPermission
+ * 查询是否拥有某个应用权限
+ * @param {String} permission 权限字符串
+ * @return {Boolean} 是否拥有某个应用权限 
+ */
 HolaFB.prototype.hasPermission = function(permission) {
   var friendCache = HolaFB.friendCache;
   for( var i in friendCache.permissions ) {
@@ -144,11 +189,17 @@ HolaFB.prototype.hasPermission = function(permission) {
   return false;
 };
 
-HolaFB.prototype.getFriends = function() {
+/*
+ * @method getFriends
+ * 获取已安装应用的好友列表
+ * @param {Object} options 列表选项 
+ * @return {Promise} Promise对象 
+ */
+HolaFB.prototype.getFriends = function(options) {
   var that = this;
+  options = options || {fields: 'id,name,first_name,picture.width(120).height(120)',limit: 8};
   return new Promise(function(resolve, reject) {
-    that._getFriendCacheData('friends', 
-      {fields: 'id,name,first_name,picture.width(120).height(120)',limit: 8})
+    that._getFriendCacheData('friends', options)
     .then(function(response) {
       resolve(response);
     })
@@ -158,11 +209,17 @@ HolaFB.prototype.getFriends = function() {
   });
 };
 
-HolaFB.prototype.getInvitableFriends = function() {
+/*
+ * @method getInvitableFriends
+ * 获取未安装应用的好友列表
+ * @param {Object} options 列表选项 
+ * @return {Promise} Promise对象 
+ */
+HolaFB.prototype.getInvitableFriends = function(options) {
   var that = this;
+  options = options || {fields: 'name,first_name,picture',limit: 8};
   return new Promise(function(resolve, reject) {
-    that._getFriendCacheData('invitable_friends',
-      {fields: 'name,first_name,picture',limit: 8})
+    that._getFriendCacheData('invitable_friends', options)
     .then(function(response) {
       resolve(response);
     })
@@ -172,11 +229,17 @@ HolaFB.prototype.getInvitableFriends = function() {
   });
 };
 
-HolaFB.prototype.getScores = function() {
+/*
+ * @method getScores
+ * 获取好友分数排行榜
+ * @param {Object} options 列表选项 
+ * @return {Promise} Promise对象 
+ */
+HolaFB.prototype.getScores = function(options) {
   var that = this;
+  options = options || {fields: 'score,user.fields(first_name,name,picture.width(120).height(120))'};
   return new Promise(function(resolve, reject) {
-    that._getFriendCacheData('scores', 
-      {fields: 'score,user.fields(first_name,name,picture.width(120).height(120))'})
+    that._getFriendCacheData('scores', options)
     .then(function(response) {
       resolve(response);
     })
@@ -186,6 +249,12 @@ HolaFB.prototype.getScores = function() {
   }); 
 };
 
+/*
+ * @method login 
+ * 用户登陆
+ * @param {Object} options 登陆选项 
+ * @return {Promise} Promise对象 
+ */
 HolaFB.prototype.login = function(options) {
   return new Promise(function(resolve, reject) {
       FB.login(function(response){
@@ -194,10 +263,16 @@ HolaFB.prototype.login = function(options) {
   });
 };
 
+/*
+ * @method logout
+ * 用户登出
+ */
 HolaFB.prototype.logout = FB.logout;
 
-////////////////////////////////////
-//分享对话框
+/*
+ * @method share
+ * 调起分享对话框
+ */
 HolaFB.prototype.share = function() {
   return new Promise(function(resolve, reject) {
     FB.ui({
@@ -231,14 +306,19 @@ HolaFB.prototype.like = function() {
   });
 }
 
-//动态发布对话框
-HolaFB.prototype.feed = function() {
+/*
+ * @method feed
+ * 调起动态发布对话框
+ * @param {Object} options 发布选项
+ * options.link 链接
+ * options.caption 标题
+ * @return {Promise} Promise对象
+ */
+HolaFB.prototype.feed = function(options) {
+  options = options || {};
+  options.method = 'feed';
   return new Promise(function(resolve, reject) {
-    FB.ui({
-      method: 'feed',
-      link: 'https://developers.facebook.com/docs/',
-      caption: 'An example caption',
-    }, function(response){
+    FB.ui(options, function(response){
       if(!response || response.error){
         reject(response ? response.error : "feed failed");
       } else {
@@ -248,16 +328,24 @@ HolaFB.prototype.feed = function() {
   });
 }
 
-HolaFB.prototype.apiFeed = function() {
+/*
+ * @method apiFeed
+ * 静默分享
+ * @param {Object} options 分享选项
+ * 选项配置参考https://developers.facebook.com/docs/graph-api/reference/v2.7/user/feed
+ * @return {Promise} Promise对象
+ */
+HolaFB.prototype.apiFeed = function(options) {
+  var to = options.to || 'me';
   return new Promise(function(resolve, reject) {
     FB.api(
-      "/me/feed",
+      to + "/feed",
       "POST",
       {
-        "message": "This message is from api feed",
-        "link": "http://www.baidu.com",
-        "caption": "Baidu",
-        "picture": "https://www.baidu.com/img/bd_logo1.png"
+        "message": option.message || "",
+        "link": option.link || "",
+        "caption": option.caption || "",
+        "picture": option.picture || "" 
       }, function(response){
       if(!response || response.error){
         reject(response ? response.error : "feed failed");
@@ -269,11 +357,12 @@ HolaFB.prototype.apiFeed = function() {
 }
 
 /* 
+ * @method send
  * 调起发送对话框,发送消息到对方的聊天对话框
  *
- * @param {url} 需要分享的链接
+ * @param {String} url 需要分享的链接
  *
- * @return a promise object
+ * @return {Promise} Promise对象 
  */
 HolaFB.prototype.send = function(url) {
   return new Promise(function(resolve, reject) {
@@ -291,28 +380,25 @@ HolaFB.prototype.send = function(url) {
 }
 
 /*
+ * @method sendNotification
  * 向某用户发送一条通知
- *
- * @param {to} 必填，目标用户的user id，不能是自己
- * @param {template} 必填， 通知文字描述
- * @param {href} 目标链接
- *
+ * @parem {String} to 必填，目标用户的user id，不能是自己
+ * @param {options} 通知选项
+ * options.template {String} 必填，通知文字描述
+ * options.href 目标链接
+ * 选项配置参考 https://developers.facebook.com/docs/games/services/appnotifications
  * @return Promise对象
  */
-HolaFB.prototype.sendNotification = function(to, template, href) {
-  if(!to || !template){
+HolaFB.prototype.sendNotification = function(to, options) {
+  if(!options || !to || !options.template){
     throw new Error("invalid parameter");
   }
   
-  var option = {template: template};
-  if(href) {
-    option.href = href;
-  }
   return new Promise(function(resolve, reject) {
     FB.api(
       '/' + to + '/notifications',
       'POST',
-      option,
+      options,
       function(response) {
         if(!response || response.error){
           reject(response ? response.error : 'send notification failed')
@@ -324,6 +410,7 @@ HolaFB.prototype.sendNotification = function(to, template, href) {
   });
 }
 
+/*
 HolaFB.prototype.sendBrag = function(caption, name, picture) {
   return new Promise(function(resolve, reject) {
     FB.ui({ method: 'feed',
@@ -335,10 +422,12 @@ HolaFB.prototype.sendBrag = function(caption, name, picture) {
     });
   });
 };
+*/
 
 /*
+ * @method sendScore
  * 发送分数，只有超过最高分才会被resolve,否则被reject
- * @param {score} 分数
+ * @param {Number} score 分数
  *
  * @return Promise对象
  */
@@ -367,14 +456,13 @@ HolaFB.prototype.sendScore = function(score) {
   });
 }
 
-////////////////////////////////////
 /*
  * 调起挑战对话框
- * @param {to} 被挑战者user id
- * @param {message} 挑战信息
- * @param {turn} 回合制游戏
+ * @param {String} to 被挑战者user id
+ * @param {String} message 挑战信息
+ * @param {Boolean} turn 回合制游戏
  *
- * @return Promise对象
+ * @return {Promise} Promise对象
  */
 HolaFB.prototype.sendChallenge = function(to, message, turn) {
   var options = {
@@ -391,17 +479,19 @@ HolaFB.prototype.sendChallenge = function(to, message, turn) {
 }
 
 /*
- * @param {to} 被请求者user id
+ * @method apiAppRequests
+ * 游戏请求
+ * @param {String} to 被请求者user id
  * @param: {option}
  * option.action_type: enum{SEND, ASKFOR, TURN, GIFT, INVITE, RECOMMEND}, 请求对象类型
- * option.data: string, 作为请求对象的补充信息，最长255字节
- * option.from: int, 发送者ID
- * option.message: string, 必填,请求的信息
- * option.object_id numeric string or integer, 开放图谱对象ID
+ * option.data: {String}, 作为请求对象的补充信息，最长255字节
+ * option.from: {String}, 发送者ID
+ * option.message: {String}, 必填,请求的信息
+ * option.object_id {String}, 开放图谱对象ID
  *
- * @return Promise对象
+ * @return {Promise} Promise对象
+ * 参考https://developers.facebook.com/docs/graph-api/reference/user/apprequests/
  *
- * @reference https://developers.facebook.com/docs/graph-api/reference/user/apprequests/
  */
 HolaFB.prototype.apiAppRequests = function(to, option) {
   if(!to || !option) {
@@ -428,12 +518,13 @@ HolaFB.prototype.apiAppRequests = function(to, option) {
 }
 
 /*
+ * @method apiChallenge
  * 通过图谱API发送挑战
- * @param {to} 被挑战者user id
- * @param {message} 挑战信息
- * @param {turn} 是否回合制游戏
+ * @param {String} to 被挑战者user id
+ * @param {String} message 挑战信息
+ * @param {Boolean} turn 是否回合制游戏
  *
- * @return Promise对象
+ * @return {Promise} Promise对象
  */
 HolaFB.prototype.apiChallenge = function(to, message, turn) {
   var options = {};
@@ -444,12 +535,14 @@ HolaFB.prototype.apiChallenge = function(to, message, turn) {
 }
 
 /*
+ * @method apiInvite
  * 通过图谱API发送邀请
  * @param {to} 被邀请者user id
  * @param {message} 邀请信息
  *
- * @return Promise对象
+ * @return {Promise} Promise对象
  */
+//TODO
 HolaFB.prototype.apiInvite = function(to, message) {
   var options = {};
   if(message) options.message = message;
@@ -458,6 +551,14 @@ HolaFB.prototype.apiInvite = function(to, message) {
   return this.apiAppRequests(to, options); 
 }
 
+/*
+ * @method apiRecommend
+ * 通过图谱API发送推荐
+ * @param {String} to 被推荐者user id
+ * @param {String} message 推荐信息 
+ *
+ * @return {Promise} Promise对象
+ */
 HolaFB.prototype.apiRecommend = function(to, message) {
   var options = {};
   if(message) options.message = message;
@@ -466,6 +567,13 @@ HolaFB.prototype.apiRecommend = function(to, message) {
   return this.apiAppRequests(to, options);
 }
 
+/*
+ * @method getRequestInfo 
+ * 获取游戏请求信息
+ * @param {String} id apiAppRequests的promise中返回的request id 
+ *
+ * @return {Promise} Promise对象
+ */
 HolaFB.prototype.getRequestInfo = function(id){
   return new Promise(function(resolve, reject) {
     FB.api(String(id), {fields: 'from{id,name,picture}' }, function(response){
@@ -478,6 +586,14 @@ HolaFB.prototype.getRequestInfo = function(id){
   });
 }
 
+/*
+ * @method deleteRequest
+ * 删除游戏请求
+ * @param {String} id apiAppRequests的promise中返回的request id 
+ * @param {Function} 删除后的回调函数
+ *
+ * @return {Promise} Promise对象
+ */
 HolaFB.prototype.deleteRequest = function(id, callback) {
   return new Promise(function(resolve, reject) {
     FB.api(String(id), 'delete', function(response){
@@ -490,7 +606,6 @@ HolaFB.prototype.deleteRequest = function(id, callback) {
   });
 }
 
-/////////////////////////////////////////
 //achievement
 HolaFB.prototype.registerAchievement = function(id) {
   return new Promise(function(resolve, reject) {
@@ -575,5 +690,5 @@ HolaFB.prototype.logPurchase = function(purcaseAmount, currency, parameters) {
   return FB.AppEvents.logPurchase(purcaseAmount, currency, parameters);
 }
 
-window.HolaFB = HolaFB;
+window.holaFB = new HolaFB;
 
